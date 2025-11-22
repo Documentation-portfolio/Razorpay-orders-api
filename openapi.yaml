@@ -63,8 +63,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
-        '404':
-          description: Order not found
+        '400':
+          description: Invalid API Key or Secret
 
   /orders/{order_id}/payments:
     get:
