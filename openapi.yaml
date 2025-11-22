@@ -1,0 +1,342 @@
+openapi: 3.1.0
+info:
+  title: Razorpay — Orders Module (Unofficial OpenAPI)
+  version: 1.0.0
+  description: |
+    Unofficial OpenAPI 3.1 specification for the Razorpay Orders module.
+    Covers: Create Order, Get Order, Fetch Payments for Order, Capture Payment, Create Refund.
+    Based on Razorpay public documentation. This file is intended for portfolio/demo use (not an official Razorpay file).
+    Docs used: Razorpay Orders, Payments (capture), Refunds, Webhooks.
+servers:
+  - url: https://api.razorpay.com/v1
+    description: Razorpay API (live/test endpoints use same base; use test API keys for sandbox)
+security:
+  - basicAuth: []
+tags:
+  - name: orders
+    description: Order creation and retrieval
+  - name: payments
+    description: Capture and fetch payments
+  - name: refunds
+    description: Create refunds
+
+paths:
+  /orders:
+    post:
+      tags:
+        - orders
+      summary: Create an order
+      description: Create an order with amount, currency and optional receipt/notes. Use order_id to associate with frontend Checkout. See Razorpay docs for required fields and behavior.  
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '4XX':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders/{order_id}:
+    get:
+      tags:
+        - orders
+      summary: Fetch order by id
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Order id (e.g., order_Dw1z1x)
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders/{order_id}/payments:
+    get:
+      tags:
+        - orders
+        - payments
+      summary: Fetch payments for an order
+      description: Retrieve payments made against an order (authorised, failed, captured). Useful for reconciliation.  
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Order id
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+          description: Number of results to return
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Number of results to skip (offset)
+      responses:
+        '200':
+          description: List of payments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+        '4XX':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payments/{payment_id}/capture:
+    post:
+      tags:
+        - payments
+      summary: Capture an authorised payment
+      description: |
+        Capture an authorised payment. Amount must match authorised amount (amount in smallest currency unit, e.g., paise).
+        Attempting to capture a payment not in 'authorized' state will return an error. Automatic capture can also be configured in Dashboard. 
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Payment id (e.g., pay_29QQoUBi66xm2f)
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CaptureRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaptureRequest'
+      responses:
+        '200':
+          description: Payment captured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Capture error (e.g., incorrect amount)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /refunds:
+    post:
+      tags:
+        - refunds
+      summary: Create a refund (full or partial)
+      description: Create a refund for a captured payment. Refund speed (normal/optimum) may affect settlement times. See docs for amounts and currency handling.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '201':
+          description: Refund created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          description: Invalid refund request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Use Razorpay Key ID and Key Secret as Basic Auth username:password (base64). Use test keys in sandbox. See Razorpay docs.
+  schemas:
+    OrderCreate:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: integer
+          description: Amount in smallest currency unit (e.g., 5000 == ₹50.00)
+        currency:
+          type: string
+          example: INR
+        receipt:
+          type: string
+          description: Merchant receipt id (optional)
+        partial_payment:
+          type: boolean
+          description: Allow partial payments for this order
+        notes:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value notes
+        payment_capture:
+          type: integer
+          description: 0 for manual capture (you must call capture endpoint), 1 for automatic capture
+          enum: [0,1]
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Order id (order_xxx)
+        entity:
+          type: string
+          example: order
+        amount:
+          type: integer
+        amount_paid:
+          type: integer
+        amount_due:
+          type: integer
+        currency:
+          type: string
+        receipt:
+          type: string
+        status:
+          type: string
+          description: created | paid | cancelled
+        attempts:
+          type: integer
+        created_at:
+          type: integer
+          description: Unix timestamp (seconds)
+        notes:
+          type: object
+          additionalProperties:
+            type: string
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        entity:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+          description: authorized | captured | failed | refunded
+        order_id:
+          type: string
+        method:
+          type: string
+        card:
+          type: object
+          nullable: true
+        vpa:
+          type: object
+          nullable: true
+        created_at:
+          type: integer
+    CaptureRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: integer
+          description: Amount to capture (smallest currency unit)
+        currency:
+          type: string
+    RefundRequest:
+      type: object
+      required:
+        - payment_id
+      properties:
+        payment_id:
+          type: string
+          description: Payment to be refunded
+        amount:
+          type: integer
+          description: Amount to refund (optional for full refund). In smallest currency unit.
+        speed:
+          type: string
+          enum: [normal, optimum]
+          description: Refund processing speed (default: normal)
+        notes:
+          type: object
+          additionalProperties:
+            type: string
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+        entity:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: integer
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            description:
+              type: string
+            field:
+              type: string
+            reason:
+              type: string
+
+externalDocs:
+  description: Official Razorpay API docs (reference)
+  url: https://razorpay.com/docs/api/orders/
