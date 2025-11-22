@@ -59,7 +59,7 @@ Maximum characters: 40
 
 **notes** json object
 
-Key-value pair used to store additional information about the entity.
+The key-value pair used to store additional information about the entity.
 
 Maximum key-value pairs: 15
 
@@ -137,7 +137,7 @@ Order created successfully `201`
 
 - **Meaning**: The amount specified is less than the minimum amount.
     
-- **Fix**: Enter an amount equal to or greater than 1.00 INR. Ensure the currency subunits, such as paise for INR, is always greater than 100.
+- **Fix**: Enter an amount equal to or greater than 1.00 INR. Ensure the currency sub-units, such as paise for INR, is always greater than 100.
     
 
 **The field name is required.** `Error Status: 400`
@@ -182,7 +182,7 @@ Values:
 
 **count** integer
 
-The number of orders you want to fetch. The default value is 10. The maximum value is 100. You can use `count`for pagination, along with `skip`.
+The number of orders you want to fetch. The default value is 10. The maximum value is 100. You can use `count` for pagination, along with `skip`.
 
 **skip** integer
 
