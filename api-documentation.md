@@ -146,8 +146,8 @@ Order created successfully `201`
     
 - **Fix**: Ensure all mandatory fields and values are present.
 
-- 
-- ## Fetch an order
+
+## Fetch an order
 
 Fetch an order with details such as currency and amount.
 
@@ -267,7 +267,8 @@ Order details `200`
     
 - **Fix**: Ensure the API key is active. Enter the API key without space before and after the key.
 
-- ## Fetch an order
+
+## Fetch an order
 
 Fetch all the payments made for an order.
 
