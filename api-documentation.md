@@ -157,7 +157,7 @@ GET
 
 ### **Endpoint Path**
 
-GET [https://api.razorpay.com/v1/orders](https://api.razorpay.com/v1/orders)
+GET [https://api.razorpay.com/v1/orders/{order_id}]
 
 ### Headers
 
@@ -178,15 +178,6 @@ Values:
 - `1`: Retrieves orders for which payments have been authorized.
     
 - `0`: Retrieves orders for which payments have not been authorized.
-    
-
-**count** integer
-
-The number of orders you want to fetch. The default value is 10. The maximum value is 100. You can use `count` for pagination, along with `skip`.
-
-**skip** integer
-
-The number of orders you want to skip. The default value is `0`. You can use `skip` for pagination, along with `count`.
 
 ## Response Parameters
 
@@ -268,7 +259,7 @@ Order details `200`
 - **Fix**: Ensure the API key is active. Enter the API key without space before and after the key.
 
 
-## Fetch an order
+## Fetch all payments for an order
 
 Fetch all the payments made for an order.
 
@@ -278,7 +269,7 @@ GET
 
 ### **Endpoint Path**
 
-GET [https://api.razorpay.com/v1/orders](https://api.razorpay.com/v1/orders)
+GET [https://api.razorpay.com/v1/orders/{order_id}/payments]
 
 ### Headers
 
@@ -381,3 +372,213 @@ List of payments for the order `200`
 }
 
  ```
+
+## Capture a payment
+
+Capture an authorized payment to complete the transaction. Ensure the status of the payment is `authorized.`
+
+## **Method**
+
+POST
+
+### **Endpoint Path**
+
+POST /payments/{payment_id}/capture
+
+### Headers
+
+Content-Type: application/json
+
+Authorization: Basic Auth
+
+Header format: `Basic base64token`
+
+`base64token` is a base64 encoded string of `YOUR_KEY_ID:YOUR_KEY_SECRET`.
+
+## Path Parameters
+
+**payment_id** string
+
+The unique ID of a payment you want to capture.
+
+## Request Parameters
+
+**amount** integer (required)
+
+The payment amount you want to capture.
+
+**currency** string
+
+The ISO code for the currency related to the payment.
+
+Default characters: 3
+
+## Request Body
+
+``` json
+{
+  "amount": 0,
+  "currency": "INR"
+}
+
+ ```
+
+## Curl
+
+``` json
+curl -u [YOUR_KEY_ID]:[YOUR_KEY_SECRET] \
+-H 'content-type: application/json' \
+-X POST https://api.razorpay.com/v1/payments/pay_29QQoUBi66xm2f/capture \
+-d '{
+  "amount": 1000,
+  "currency": "INR"
+}'
+
+ ```
+
+## HTTP Status Codes
+
+Payment captured successfully `200`
+
+``` json
+{
+  "id": "string",
+  "amount": 0,
+  "currency": "string",
+  "status": "string",
+  "order_id": "string",
+  "method": "string",
+  "created_at": 0
+}
+
+ ```
+
+## Errors
+
+**Capture amount is required to be equal to the amount authorized** `Error Status: 400`
+
+- **Meaning**: The capture amount is different from the authorized amount.
+    
+- **Fix**: Ensure the captured amount is equal to the authorized amount..
+    
+
+**The requested URL is not found on the server** `Error Status: 400`
+
+- **Meaning**: The URL is incorrect.
+    
+- **Fix**: Use the correct URL.
+
+
+## Create a refund
+
+Create a full or a partial refund against a captured payment.
+
+## **Method**
+
+POST
+
+### **Endpoint Path**
+
+POST /refunds
+
+### Headers
+
+Content-Type: application/json
+
+Authorization: Basic Auth
+
+Header format: `Basic base64token`
+
+`base64token` is a base64 encoded string of `YOUR_KEY_ID:YOUR_KEY_SECRET`.
+
+## Path Parameters
+
+**payment_id** string (required)
+
+The unique ID of a payment you want to capture.
+
+## Request Parameters
+
+**amount** integer (required)
+
+The payment amount you want to refund.
+
+- For a partial refund, enter a value less than the payment amount.
+    
+- For a full refund, enter a value equal to the payment amount.
+    
+
+**Warning**: Ensure the last decimal number of the `amount` is `0`. For example, if you want to refund 99.991 Rupees, then ensure the amount parameter is `99990`.
+
+**speed** string
+
+The speed of processing the refund. The valid values are:
+
+- `normal` (default)
+    
+- `optimum`
+    
+
+**notes** json object
+
+Key-value pair to store additional information about the redund.
+
+Maximum key-value pairs: 15
+
+## Request Body
+
+``` json
+{
+  "payment_id": "string",
+  "amount": 0,
+  "speed": "normal",
+  "notes": {
+    "additionalProp1": "string",
+    "additionalProp2": "string",
+    "additionalProp3": "string"
+  }
+}
+
+ ```
+
+## Curl
+
+``` json
+curl -u [YOUR_KEY_ID]:[YOUR_KEY_SECRET] \
+-X POST https://api.razorpay.com/v1/payments/pay_29QQoUBi66xm2f/refund \
+-H 'Content-Type: application/json' \
+-d '{
+  "amount": 500100
+}'
+
+ ```
+
+## HTTP Status Codes
+
+Refund created `201`
+
+``` json
+{
+  "id": "string",
+  "amount": 0,
+  "currency": "string",
+  "status": "string",
+  "created_at": 0
+}
+
+ ```
+
+## Errors
+
+**{payment_id} is not a valid ID** `Error Status: 400`
+
+- **Meaning**: The `payment_id` is invalid.
+    
+- **Fix**: Use the correct `payment_id`.
+    
+
+**The requested URL is not found on the server** `Error Status: 400`
+
+- **Meaning**: The URL is incorrect.
+    
+- **Fix**: Use the correct URL.
