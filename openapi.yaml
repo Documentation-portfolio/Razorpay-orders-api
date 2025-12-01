@@ -56,6 +56,16 @@ paths:
           schema:
             type: string
           description: The order ID (e.g., order_123abc)
+        - name: authorized
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [0, 1]
+          description: |
+            Filter orders based on payment authorization status.
+            - `1`: Retrieves orders for which payments have been authorized.
+            - `0`: Retrieves orders for which payments have not been authorized.
       responses:
         '200':
           description: Order details
@@ -64,7 +74,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Order'
         '400':
-          description: Invalid API Key or Secret
+          description: The API Key or Secret provided is invalid
 
   /orders/{order_id}/payments:
     get:
@@ -78,6 +88,7 @@ paths:
           required: true
           schema:
             type: string
+          description: The unique ID of the order.
         - name: count
           in: query
           schema:
@@ -102,19 +113,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Payment'
+        '400':
+          description: The API Key or Secret provided is invalid
 
   /payments/{payment_id}/capture:
     post:
       tags:
         - payments
       summary: Capture a payment
+      description: Capture an authorized payment to complete the transaction. Ensure the payment status is `authorized` before capture.
       parameters:
         - name: payment_id
           in: path
           required: true
           schema:
             type: string
-          description: Razorpay payment ID
+          description: Razorpay payment ID you want to capture.
       requestBody:
         required: true
         content:
@@ -129,13 +143,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Payment'
         '400':
-          description: Capture failed
+          description: Capture failed. For example, capture amount does not match authorized amount or the URL is incorrect.
 
   /refunds:
     post:
       tags:
         - refunds
       summary: Create a refund
+      description: Create a full or partial refund against a captured payment.
       requestBody:
         required: true
         content:
@@ -150,8 +165,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Refund'
         '400':
-          description: Refund creation failed
-
+          description: Refund creation failed. For example, invalid `payment_id`, incorrect URL, or invalid refund amount.
 
 components:
 
@@ -187,6 +201,9 @@ components:
       properties:
         id:
           type: string
+        entity:
+          type: string
+          description: The entity type. For orders, this is typically `order`.
         amount:
           type: integer
         amount_paid:
@@ -211,18 +228,38 @@ components:
       properties:
         id:
           type: string
+        entity:
+          type: string
+          description: The entity type. For payments, this is typically `payment`.
         amount:
           type: integer
         currency:
           type: string
         status:
           type: string
+          description: |
+            The status of the payment. Possible values:
+            - `created`
+            - `authorized`
+            - `captured`
+            - `refunded`
+            - `failed`
         order_id:
           type: string
         method:
           type: string
+          description: |
+            The payment method used. Possible values include:
+            - `card`
+            - `netbanking`
+            - `wallet`
+            - `upi`
+            - `emi`
         created_at:
           type: integer
+        receipt:
+          type: string
+          description: The unique receipt number related to the order/payment, if available.
 
     CaptureRequest:
       type: object
@@ -231,30 +268,38 @@ components:
       properties:
         amount:
           type: integer
+          description: The payment amount you want to capture, in the smallest currency sub-unit.
         currency:
           type: string
           example: INR
+          description: The ISO currency code for the payment.
 
     RefundRequest:
       type: object
       required:
         - payment_id
+        - amount
       properties:
         payment_id:
           type: string
+          description: The unique identifier of the payment to be refunded.
         amount:
           type: integer
-          description: Amount to refund (optional for full refund)
+          description: >
+            The payment amount you want to refund, in the smallest currency sub-unit.
+            - For a partial refund, enter a value less than the payment amount.
+            - For a full refund, enter a value equal to the payment amount.
         speed:
           type: string
           enum:
             - normal
             - optimum
-          description: Refund processing speed
+          description: Refund processing speed.
         notes:
           type: object
           additionalProperties:
             type: string
+          description: Key-value pair to store additional information about the refund.
 
     Refund:
       type: object
