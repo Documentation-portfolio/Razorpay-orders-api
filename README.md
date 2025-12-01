@@ -9,6 +9,8 @@ The Razorpay Orders API helps developers create and manage payment orders, retri
 - How to create an order
 - How to fetch orders with query filters
 - How to fetch payments for an order
+- How to capture a payment
+- How to create a refund
 - Request body and parameter reference
 - Response schemas
 - Curl examples
